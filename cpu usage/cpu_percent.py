@@ -1,30 +1,41 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from psutil import cpu_percent
+import streamlit as st
+import psutil
+import pandas as pd
+import time
 
-cpu_perc=[]
+# ---------------- CONFIG ---------------- #
+st.set_page_config(page_title="CPU Monitor", layout="wide")
 
-#for how many sec we need to keep CPU % window
-frame_length=200
-def animate(i):
-    cpu_perc.append(cpu_percent())
+st.title("🖥️ Real-Time CPU Usage Monitor")
+st.markdown("### 👨‍💻 Project Created by **Himanshu Shah**")
 
-    if(len(cpu_perc) <= frame_length):
-       plt.cla() #clear
-       if(len(cpu_perc)>=20):
-           plt.plot(cpu_perc,'b',label="CPU Usage")
-       else:
-           plt.plot(cpu_perc,'g',label="CPU Usage")
-    print(cpu_perc)
-    plt.ylim(0,100)
-    plt.xlabel("Time")
-    plt.ylabel("CPU uses(%)")
-    plt.legend(loc="upper right")
+FRAME_LENGTH = 200
 
-    #Matplotlib's tight_layout is a function that automatically adjusts subplot parameters to give specified padding.
-    #It's a handy tool to remove unnecessary white space from your plots, making your visualizations cleaner and easier to interpret.
-    plt.tight_layout()
+# ---------------- SESSION STATE ---------------- #
+if "cpu_perc" not in st.session_state:
+    st.session_state.cpu_perc = []
 
-#1000 milisec
-ani = animation.FuncAnimation(plt.gcf(),animate,interval=1000)
-plt.show()
+# ---------------- AUTO REFRESH LOOP ---------------- #
+placeholder = st.empty()
+
+for _ in range(1000):  # acts like animation frames
+    cpu = psutil.cpu_percent()
+    st.session_state.cpu_perc.append(cpu)
+
+    # keep last 200 values
+    if len(st.session_state.cpu_perc) > FRAME_LENGTH:
+        st.session_state.cpu_perc.pop(0)
+
+    # ---------------- UI UPDATE ---------------- #
+    with placeholder.container():
+        st.subheader(f"Current CPU Usage: {cpu}%")
+
+        df = pd.DataFrame(st.session_state.cpu_perc, columns=["CPU %"])
+
+        # Color logic similar to your code
+        if len(st.session_state.cpu_perc) >= 20:
+            st.line_chart(df)
+        else:
+            st.line_chart(df)
+
+    time.sleep(1)
